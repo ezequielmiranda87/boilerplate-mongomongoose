@@ -12,6 +12,9 @@
 // `mongoose`. Store your **mLab** database URI in the private `.env` file 
 // as `MONGO_URI`. Connect to the database using `mongoose.connect(<Your URI>)`
 
+const mongoose = require('mongoose')
+mongoose.connect(process.env.MONGO_URI)
+
 
 /** # SCHEMAS and MODELS #
 /*  ====================== */
@@ -37,8 +40,16 @@
 // `default` values. See the [mongoose docs](http://mongoosejs.com/docs/guide.html).
 
 // <Your code here >
+const personSchema = new mongoose.Schema({
+  name: {type: String, required: true},
+  age: Number,
+  favoriteFoods: Array
+})
 
-var Person /* = <Your Model> */
+
+var Person = mongoose.model('Person', personSchema)
+
+
 
 // **Note**: GoMix is a real server, and in real servers interactions with
 // the db are placed in handler functions, to be called when some event happens
@@ -75,9 +86,15 @@ var Person /* = <Your Model> */
 //    ...do your stuff here...
 // });
 
-var createAndSavePerson = function(done) {
-  
-  done(null /*, data*/);
+
+
+
+var createAndSavePerson = function(err, done) {
+  const newPerson = new Person({name:'ezex', age:30, favoriteFoods:['Haburguer', 'Pizza'] })
+  newPerson.save((err, data)=>{
+    if(err) return done(err)
+    done(null, data);   
+  })
 
 };
 
@@ -90,10 +107,12 @@ var createAndSavePerson = function(done) {
 // Create many people using `Model.create()`, using the function argument
 // 'arrayOfPeople'.
 
+const arrayOfPeople = [{name:'ezex', age:30, favoriteFoods:['Haburguer', 'Pizza'] },{name:'ezex', age:30, favoriteFoods:['Haburguer', 'Pizza'] },{name:'ezex', age:30, favoriteFoods:['Haburguer', 'Pizza'] },{name:'ezex', age:30, favoriteFoods:['Haburguer', 'Pizza'] }]
 var createManyPeople = function(arrayOfPeople, done) {
-    
-    done(null/*, data*/);
-    
+    Person.create(arrayOfPeople, (err, data)=>{
+      if(err) done(err)
+      done(null, data)
+    })
 };
 
 /** # C[R]UD part II - READ #
@@ -108,9 +127,11 @@ var createManyPeople = function(arrayOfPeople, done) {
 // Use the function argument `personName` as search key.
 
 var findPeopleByName = function(personName, done) {
+  Person.find({name:personName}, (err, data)=>{
+    if(err) done(err)
+    done(null, data)
+  })
   
-  done(null/*, data*/);
-
 };
 
 /** 6) Use `Model.findOne()` */
@@ -123,24 +144,27 @@ var findPeopleByName = function(personName, done) {
 // argument `food` as search key
 
 var findOneByFood = function(food, done) {
-
-  done(null/*, data*/);
+  Person.findOne({favoriteFoods:food}, (err, data)=>{
+      if (err) done(err)
+      console.log(data)
+      done(null, data)
+  })
   
 };
 
 /** 7) Use `Model.findById()` */
 
 // When saving a document, mongodb automatically add the field `_id`,
-// and set it to a unique alphanumeric key. Searching by `_id` is an
 // extremely frequent operation, so `moongose` provides a dedicated
 // method for it. Find the (only!!) person having a certain Id,
 // using `Model.findById() -> Person`.
 // Use the function argument 'personId' as search key.
 
 var findPersonById = function(personId, done) {
-  
-  done(null/*, data*/);
-  
+  Person.findById(personId, (err, data)=>{
+    if (err) done(err)
+    done(null, data)
+  })
 };
 
 /** # CR[U]D part III - UPDATE # 
@@ -170,8 +194,14 @@ var findPersonById = function(personId, done) {
 
 var findEditThenSave = function(personId, done) {
   var foodToAdd = 'hamburger';
-  
-  done(null/*, data*/);
+  Person.findById(personId,(err, personUpdate)=>{
+    if(err) done(err)
+    personUpdate.favoriteFoods.push(foodToAdd)
+    personUpdate.save((err, data)=>{
+      if(err) done(err)
+      done(null, data)
+    })
+  })
 };
 
 /** 9) New Update : Use `findOneAndUpdate()` */
@@ -191,8 +221,10 @@ var findEditThenSave = function(personId, done) {
 
 var findAndUpdate = function(personName, done) {
   var ageToSet = 20;
-
-  done(null/*, data*/);
+  Person.findOneAndUpdate({name:personName}, {age:ageToSet}, (err, save)=>{
+    if(err) done(err)
+    done(null, save)
+  })
 };
 
 /** # CRU[D] part IV - DELETE #
@@ -206,8 +238,10 @@ var findAndUpdate = function(personName, done) {
 // As usual, use the function argument `personId` as search key.
 
 var removeById = function(personId, done) {
-  
-  done(null/*, data*/);
+  Person.findByIdAndRemove(personId, (err, person)=>{
+    if (err) done(err)
+    done(null, person)
+  })
     
 };
 
@@ -223,8 +257,10 @@ var removeById = function(personId, done) {
 
 var removeManyPeople = function(done) {
   var nameToRemove = "Mary";
-
-  done(null/*, data*/);
+  Person.remove({name:nameToRemove}, (err, data)=>{
+      if (err) done(err)
+      done(null, data);
+  })
 };
 
 /** # C[R]UD part V -  More about Queries # 
@@ -247,8 +283,11 @@ var removeManyPeople = function(done) {
 
 var queryChain = function(done) {
   var foodToSearch = "burrito";
+  Person.find({favoriteFoods: foodToSearch}).sort({name:1}).limit(2).select({name:1, favoriteFood:1}).exec((err, result)=>{
+    if (err)  done(err);
+    done(null, result);
+  })
   
-  done(null/*, data*/);
 };
 
 /** **Well Done !!**
